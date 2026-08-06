@@ -54,6 +54,19 @@ public enum SeriesAppearance: String, CaseIterable, Sendable, Identifiable {
         }
     }
 
+    /// The same, resolved against what macOS is doing at this moment.
+    ///
+    /// For chrome drawn OUTSIDE the styled subtree — a view that applies
+    /// `seriesStyle` cannot also read the theme it just injected, since a
+    /// modifier's environment reaches its children and not itself. Prefer
+    /// `@Environment(\.seriesTheme)` wherever it is available: this resolves
+    /// once rather than following a system flip live.
+    @MainActor
+    public func resolvedAgainstSystem() -> ColorScheme {
+        let dark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        return resolve(system: dark ? .dark : .light)
+    }
+
     /// For AppKit surfaces that sit outside SwiftUI's environment — an
     /// `NSWindow`'s own appearance, a status-item view. nil means "follow the
     /// system", which is what an unset `NSWindow.appearance` already does.
