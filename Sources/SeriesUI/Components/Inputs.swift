@@ -68,26 +68,36 @@ public struct SegmentedRail<Value: Hashable>: View {
 
 /// Pick one of many. Replaces `Picker(.menu)`.
 ///
-/// The closed control is ours; the dropped list is still the system's menu.
-/// Minute draws that list too (`OverlayHost`), which is the better answer and
-/// the one to port here — but it needs a window-root overlay layer, and the
-/// closed state is what a settings screen shows 99% of the time.
+/// Both halves are ours: the closed control, and the list it drops — the latter
+/// through `SeriesOverlayHost`, so the popup is a series surface rather than a
+/// system menu appearing in the middle of one.
+///
+/// Needs a `SeriesOverlayRoot` above it. Without one it draws dimmed rather
+/// than looking live and doing nothing when clicked — a control that ignores
+/// clicks is the hardest kind of bug to see.
 public struct SeriesDropdown<Value: Hashable>: View {
     @Binding var selection: Value
     var options: [(value: Value, label: String)]
     /// Accessible name — the visible label lives in the `SettingRow` beside it.
     var label: String
+    /// Adds a filter field to the popup. Worth it past a dozen or so options.
+    var filterable: Bool
 
     @Environment(\.seriesTheme) private var theme
+    @Environment(\.seriesOverlayHost) private var host
+    @State private var frame: CGRect = .zero
+    @State private var hovering = false
 
     public init(
         selection: Binding<Value>,
         options: [(value: Value, label: String)],
-        label: String
+        label: String,
+        filterable: Bool = false
     ) {
         self._selection = selection
         self.options = options
         self.label = label
+        self.filterable = filterable
     }
 
     private var currentLabel: String {
@@ -95,11 +105,7 @@ public struct SeriesDropdown<Value: Hashable>: View {
     }
 
     public var body: some View {
-        Menu {
-            ForEach(Array(options.enumerated()), id: \.offset) { _, option in
-                Button(option.label) { selection = option.value }
-            }
-        } label: {
+        Button(action: open) {
             HStack(spacing: 8) {
                 Text(currentLabel)
                     .scaledFont(.meta)
@@ -113,20 +119,34 @@ public struct SeriesDropdown<Value: Hashable>: View {
             .padding(.horizontal, 10)
             .frame(maxWidth: .infinity)
             .frame(height: SeriesControl.height)
-            .background(shape.fill(theme.fill(0.07)))
+            .background(shape.fill(theme.fill(hovering && host != nil ? 0.12 : 0.07)))
             .overlay(shape.stroke(theme.cardBorder, lineWidth: 1))
+            .opacity(host == nil ? 0.35 : 1)
             .contentShape(shape)
         }
-        // `.button`, NOT `.borderlessButton`: the borderless style discards the
-        // custom label and draws its own bare title-plus-chevron, which is how
-        // the one styled control on the screen ends up as tinted text floating
-        // with no well around it.
-        .menuStyle(.button)
         .buttonStyle(.plain)
-        .menuIndicator(.hidden)
-        .pointingHand()
+        .disabled(host == nil)
+        .onHover { hovering = $0 }
+        .pointingHand(host != nil)
+        .rootFrame($frame)
         .accessibilityLabel(label)
         .accessibilityValue(currentLabel)
+    }
+
+    private func open() {
+        guard let host else { return }
+        host.show(SeriesMenuRequest(
+            anchor: frame,
+            // The popup is at least as wide as the control it came from, so the
+            // labels it is showing are the ones that just fitted above it.
+            width: max(frame.width, 180),
+            filterable: filterable,
+            items: options.map { option in
+                SeriesMenuItem.item(option.label, checked: option.value == selection) {
+                    selection = option.value
+                }
+            }
+        ))
     }
 
     private var shape: RoundedRectangle {

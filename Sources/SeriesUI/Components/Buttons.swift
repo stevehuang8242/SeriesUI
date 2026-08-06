@@ -70,8 +70,16 @@ public enum InkButtonStyle: Sendable {
     case secondary
     /// Transparent until hovered.
     case ghost
-    /// Solid negative.
+    /// Solid negative. For the moment of commitment — the confirm button in a
+    /// destructive dialog — and only there.
     case danger
+    /// Negative label on a transparent ground, washing negative on hover.
+    ///
+    /// For the affordance that OPENS a destructive confirmation. A solid red
+    /// block sitting permanently in a toolbar shouts before anything has been
+    /// decided, and by the time the real commitment arrives it has nothing
+    /// louder left to say.
+    case dangerGhost
 }
 
 /// The standard button. Replaces `.borderedProminent` and `.bordered`.
@@ -114,6 +122,7 @@ public struct InkButton: View {
         switch style {
         case .primary: return theme.canvas
         case .danger: return .white
+        case .dangerGhost: return active ? theme.negativeDeep : theme.negative
         case .secondary: return theme.text(active ? 1 : 0.85)
         case .ghost: return theme.text(active ? 1 : 0.65)
         }
@@ -125,6 +134,7 @@ public struct InkButton: View {
         // Solid semantic buttons hover DARKER, never faded — see
         // `SeriesTheme.negativeDeep`.
         case .danger: return active ? theme.negativeDeep : theme.negative
+        case .dangerGhost: return active ? theme.negative.opacity(0.14) : .clear
         case .secondary: return theme.fill(active ? 0.18 : 0.10)
         case .ghost: return active ? theme.fill(0.12) : .clear
         }

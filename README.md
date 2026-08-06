@@ -56,7 +56,22 @@ switching to Light did nothing until the window was closed and reopened.
 | `Card` / `SettingRow` | the grammar of a settings screen |
 | `SegmentedRail` / `SeriesDropdown` / `InkField` / `InkSwitch` / `InkCheckbox` / `UnderlineTabs` | inputs |
 | `InkButton` / `IconButton` / `PillButton` | actions |
+| `SeriesOverlayRoot` / `SeriesMenuRequest` / `SeriesDialogRequest` | menus and dialogs, drawn in the window |
+| `SeriesListRow` / `SeriesTextEditor` / `SeriesEmptyState` | lists and long-form editing |
 | `StatusDot` / `ShimmerText` / `MarqueeText` / `InlineNote` / `Hairline` | indicators |
+
+Wrap a window's content in `SeriesOverlayRoot` to give it menus and dialogs.
+`SeriesDropdown` needs one — it draws its popup there rather than opening a
+system menu, and without a host it renders dimmed rather than looking live and
+ignoring clicks.
+
+### Destructive actions come in two weights
+
+`.danger` is solid negative and belongs to the moment of commitment — the
+confirm button inside a destructive dialog. The affordance that merely OPENS
+that dialog takes `.dangerGhost`: negative label, transparent ground. A solid
+red block sitting permanently in a toolbar shouts before anything has been
+decided, and leaves nothing louder for the actual commitment.
 
 ### Three rules worth knowing before adding anything
 
@@ -83,10 +98,6 @@ instantly as such — a fair argument, and the largest remaining visual
 difference between the apps. Every component renders its icon in exactly one
 place, so swapping the layer is a change inside this package.
 
-**Menus.** `SeriesDropdown`'s closed control is ours; the dropped list is still
-the system's. Minute draws that too (`OverlayHost`), which is the better answer
-and the one to port.
-
 **The prose.** Minute's `docs/design-language.md` is the fullest write-up of
 this language and still lives in Minute's repository, which makes the newest
 app the de facto owner of the series. It belongs here, with a section per app
@@ -98,6 +109,14 @@ Currently a path dependency (`.package(path: "../SeriesUI")`), so a fresh clone
 of a consuming app alone will not build. Publish this and switch them to a URL
 before any of them ships to other people.
 
-- **Gloss** — theme, type, settings screen
-- **Minute** — not yet migrated; has the richest local implementation (`App/DesignSystem.swift`, `App/Controls.swift`)
+- **Gloss** — fully migrated: every window and panel
+- **Minute** — not yet migrated; has the richest local implementation (`App/DesignSystem.swift`, `App/Controls.swift`, `App/Overlay.swift` — the last of which this package's overlay layer was ported from)
 - **ClaudeNotch** — not yet migrated; source of `textAlpha` and the data palette
+
+### A build note
+
+Gloss consumes this by path, and SwiftPM's incremental build does not always
+notice a NEW file in a path dependency — the consumer keeps compiling against
+the previously emitted module and reports `cannot find X in scope` for something
+that plainly exists. `swift package clean` in the consumer fixes it. Worth
+knowing before spending twenty minutes on a spelling.
