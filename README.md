@@ -109,9 +109,23 @@ Currently a path dependency (`.package(path: "../SeriesUI")`), so a fresh clone
 of a consuming app alone will not build. Publish this and switch them to a URL
 before any of them ships to other people.
 
-- **Gloss** — fully migrated: every window and panel
-- **Minute** — not yet migrated; has the richest local implementation (`App/DesignSystem.swift`, `App/Controls.swift`, `App/Overlay.swift` — the last of which this package's overlay layer was ported from)
-- **ClaudeNotch** — not yet migrated; source of `textAlpha` and the data palette
+All three, each adopting the layers that fit it:
+
+- **Gloss** — fully migrated. Every window and panel, including the controls,
+  the menus and the dialogs. Type scale `.reading`.
+- **Brim** — palette, roles, preferences and the measuring helpers. Type scale
+  `.compact`: its panel hangs off a hardware notch. Keeps its own panel
+  components. This is where `textAlpha` and the data palette came from.
+- **Minute** — palette, roles and preferences, reached through its own `T`
+  façade so its fifteen view files did not have to change. Type scale
+  `.reading`. Keeps its own control library and its 37 hand-drawn glyphs,
+  which is the reason the icon question below is still open. Its
+  `OverlayHost` is where this package's overlay layer came from, and both now
+  measure against the same named coordinate space.
+
+The pattern is worth stating: an app takes the layers where agreeing helps —
+colour, roles, preference schema — and keeps the ones where its surface is
+genuinely different. Nothing here requires taking all of it.
 
 ### A build note
 
