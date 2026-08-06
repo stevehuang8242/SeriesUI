@@ -106,9 +106,11 @@ for the deliberate deviations.
 
 ## Consumers
 
-Private, and resolved over SSH through the `github.com-personal` host alias the
-three apps share — building any of them needs that alias in `~/.ssh/config` and
-a key that can read this repository.
+Public and resolved over HTTPS, while the three apps themselves are private.
+It holds no secrets and no product logic, so being public costs nothing — and
+it is what lets a clone, a new machine or a CI runner resolve it with no key
+and no ssh-config entry. A private dependency behind a personal host alias
+built on exactly one Mac, which is not a dependency, it is a local file.
 
 Each pins `branch: "main"`. Tag this and move them to `.upToNextMinor(from:)`
 when that stops being comfortable: "whatever main says today" is fine while one
