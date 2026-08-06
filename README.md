@@ -1,22 +1,23 @@
 # SeriesUI
 
-The design language shared by **Gloss**, **Minute** and **ClaudeNotch**.
+The design language shared by **Gloss**, **Minute** and **Brim**.
 
 The three apps had independently arrived at most of the same palette — the
-lineage runs ClaudeNotch → Gloss → Minute — but each had kept its own copy, so
-improvements stopped travelling. ClaudeNotch worked out a light-mode contrast
+lineage runs Brim → Gloss → Minute — but each had kept its own copy, so
+improvements stopped travelling. Brim worked out a light-mode contrast
 compensation the other two never got; Minute added a `note` text role after
 discovering that setting a paragraph in `micro` produces a slab of fat round
 grey, and Gloss still had that paragraph. This package is the one copy.
 
 ## What is shared, and what is not
 
-**Shared: the vocabulary.** Colours, the type scale, control shapes, the two
+**Shared: the vocabulary.** Colours, the text ROLES, control shapes, the two
 easings, and the *schema* of the three user preferences.
 
 **Not shared: the values.** Each app stores its own appearance, typeface and
-text size, and picks its own defaults. The apps have genuinely different
-physical constraints — ClaudeNotch's bar is hardware-sized and wraps a black
+text size, picks its own defaults, and brings its own point sizes for the
+shared roles (`SeriesTypeScale`). The apps have genuinely different
+physical constraints — Brim's bar is hardware-sized and wraps a black
 notch, Gloss's card sits beside the text you are reading, Minute's window is
 where you spend an hour — so someone who wants Large in a reading tool does not
 thereby want Large in an ambient gauge. What the shared schema buys is that
@@ -31,7 +32,7 @@ shared suite and no cross-app sync.
 // Each app, once, at startup:
 let preferences = SeriesPreferences(
     store: UserDefaults.standard,
-    defaultAppearance: .system,          // ClaudeNotch passes .dark
+    defaultAppearance: .system,          // Brim passes .dark
     legacyKeys: .init(appearance: "panelAppearance", …)  // read once, so nobody's choice resets
 )
 
@@ -50,7 +51,7 @@ switching to Light did nothing until the window was closed and reopened.
 | | |
 |---|---|
 | `SeriesTheme` | ink, fills, four surfaces, semantic colour, aurora |
-| `SeriesTextRole` / `scaledFont` | `micro · note · meta · header · body · reading · display` |
+| `SeriesTextRole` / `SeriesTypeScale` / `scaledFont` | `micro · note · meta · header · body · value · reading · display`, sized per app |
 | `SeriesAppearance` / `SeriesTypeface` / `SeriesTextScale` | the preference schema |
 | `SeriesRadius` / `SeriesControl` / `SeriesMotion` / `SeriesCardShadow` | shape, size, timing |
 | `Card` / `SettingRow` | the grammar of a settings screen |
@@ -105,9 +106,14 @@ for the deliberate deviations.
 
 ## Consumers
 
-Currently a path dependency (`.package(path: "../SeriesUI")`), so a fresh clone
-of a consuming app alone will not build. Publish this and switch them to a URL
-before any of them ships to other people.
+Private, and resolved over SSH through the `github.com-personal` host alias the
+three apps share — building any of them needs that alias in `~/.ssh/config` and
+a key that can read this repository.
+
+Each pins `branch: "main"`. Tag this and move them to `.upToNextMinor(from:)`
+when that stops being comfortable: "whatever main says today" is fine while one
+person owns all four, and becomes a way for a change made for one app to arrive
+unannounced in another.
 
 All three, each adopting the layers that fit it:
 
@@ -129,8 +135,7 @@ genuinely different. Nothing here requires taking all of it.
 
 ### A build note
 
-Gloss consumes this by path, and SwiftPM's incremental build does not always
-notice a NEW file in a path dependency — the consumer keeps compiling against
-the previously emitted module and reports `cannot find X in scope` for something
-that plainly exists. `swift package clean` in the consumer fixes it. Worth
-knowing before spending twenty minutes on a spelling.
+SwiftPM's incremental build does not always notice a NEW file here — a consumer
+keeps compiling against the previously emitted module and reports `cannot find X
+in scope` for something that plainly exists. `swift package clean` in the
+consumer fixes it. Worth knowing before spending twenty minutes on a spelling.
