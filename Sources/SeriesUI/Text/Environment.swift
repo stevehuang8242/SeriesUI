@@ -41,6 +41,7 @@ extension EnvironmentValues {
 
 private struct SeriesStyle: ViewModifier {
     @ObservedObject var preferences: SeriesPreferences
+    let typeScale: SeriesTypeScale
     /// The ambient scheme, read from OUTSIDE this modifier — so when the user
     /// is on System and macOS flips, this changes and everything below
     /// re-renders. Writing `colorScheme` below does not disturb this read.
@@ -55,6 +56,7 @@ private struct SeriesStyle: ViewModifier {
             .environment(\.seriesTheme, theme)
             .environment(\.seriesTextScale, preferences.textScale)
             .environment(\.seriesTypeface, preferences.typeface)
+            .environment(\.seriesTypeScale, typeScale)
             // The few system-drawn things left — text insertion points, menu
             // popups, `textSelection` highlights — follow the choice too.
             .environment(\.colorScheme, theme.scheme)
@@ -66,7 +68,14 @@ extension View {
     /// Root of every window and panel in a series app. Everything below draws
     /// from the same theme, scale and typeface, and restyles live when any of
     /// the three changes.
-    public func seriesStyle(_ preferences: SeriesPreferences) -> some View {
-        modifier(SeriesStyle(preferences: preferences))
+    ///
+    /// `typeScale` is the app's own point sizes for the shared roles — see
+    /// `SeriesTypeScale`. It defaults to the reading sizes; a dense gauge
+    /// passes `.compact`.
+    public func seriesStyle(
+        _ preferences: SeriesPreferences,
+        typeScale: SeriesTypeScale = .reading
+    ) -> some View {
+        modifier(SeriesStyle(preferences: preferences, typeScale: typeScale))
     }
 }

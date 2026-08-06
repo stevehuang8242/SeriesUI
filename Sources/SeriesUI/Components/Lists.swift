@@ -61,6 +61,7 @@ public struct SeriesTextEditor: View {
 
     @Environment(\.seriesTheme) private var theme
     @Environment(\.seriesTextScale) private var scale
+    @Environment(\.seriesTypeScale) private var typeScale
 
     public init(text: Binding<String>, monospaced: Bool = false) {
         self._text = text
@@ -71,8 +72,9 @@ public struct SeriesTextEditor: View {
         TextEditor(text: $text)
             .font(
                 monospaced
-                    ? .system(size: scale.apply(to: 13), design: .monospaced)
-                    : .system(size: scale.apply(to: SeriesTextRole.reading.size),
+                    ? .system(size: scale.apply(to: typeScale.size(.reading) - 3),
+                              design: .monospaced)
+                    : .system(size: scale.apply(to: typeScale.size(.reading)),
                               weight: theme.weight(SeriesTextRole.reading.weight))
             )
             .scrollContentBackground(.hidden)

@@ -51,7 +51,7 @@ final class TextScaleTests: XCTestCase {
     func testTheScaleIsMonotonic() {
         var previous: CGFloat = 0
         for step in SeriesTextScale.allCases {
-            let size = step.apply(to: SeriesTextRole.reading.size)
+            let size = step.apply(to: SeriesTypeScale.reading.size(.reading))
             XCTAssertGreaterThan(size, previous, "\(step.label) should exceed the step below it")
             previous = size
         }
@@ -61,37 +61,54 @@ final class TextScaleTests: XCTestCase {
     func testEveryRoleLandsOnAWholePointAtEveryStep() {
         for step in SeriesTextScale.allCases {
             for role in SeriesTextRole.allCases {
-                let size = step.apply(to: role.size)
+                let size = step.apply(to: SeriesTypeScale.reading.size(role))
                 XCTAssertEqual(size, size.rounded(), "\(role) at \(step.label) → \(size)")
             }
         }
     }
 
     /// The relative hierarchy is what makes the scale readable; no multiplier
-    /// may flatten two roles into the same size.
+    /// may flatten two roles into the same size. Checked on BOTH shipped type
+    /// scales — the sizes are each app's own, but the ordering is the shared
+    /// part and is what a new scale could quietly get wrong.
     func testTheHierarchySurvivesEveryStep() {
-        for step in SeriesTextScale.allCases {
-            let meta = step.apply(to: SeriesTextRole.meta.size)
-            let reading = step.apply(to: SeriesTextRole.reading.size)
-            let display = step.apply(to: SeriesTextRole.display.size)
-            XCTAssertLessThan(meta, reading, step.label)
-            XCTAssertLessThan(reading, display, step.label)
+        for typeScale in [SeriesTypeScale.reading, .compact] {
+            for step in SeriesTextScale.allCases {
+                let meta = step.apply(to: typeScale.size(.meta))
+                let body = step.apply(to: typeScale.size(.body))
+                let display = step.apply(to: typeScale.size(.display))
+                XCTAssertLessThanOrEqual(meta, body, step.label)
+                XCTAssertLessThan(body, display, step.label)
+            }
+        }
+    }
+
+    /// A role with no size in the table would silently fall back, so every
+    /// shipped scale has to name all of them.
+    func testEveryScaleCoversEveryRole() {
+        for typeScale in [SeriesTypeScale.reading, .compact] {
+            for role in SeriesTextRole.allCases {
+                XCTAssertGreaterThan(typeScale.size(role), 0, "\(role)")
+            }
         }
     }
 }
 
 final class TextRoleTests: XCTestCase {
-    /// `micro` is the only rounded role. A paragraph set in it — which is what
-    /// Gloss did before `note` existed — reads as a slab of fat round grey.
-    func testOnlyMicroIsRounded() {
+    /// Rounded is reserved for the two roles that are not prose: the small-caps
+    /// label and the emphasised figure. Everything a person reads in sentences
+    /// stays on the default design — a paragraph set in `micro`, which is what
+    /// Gloss did before `note` existed, is a slab of fat round grey.
+    func testOnlyLabelsAndFiguresAreRounded() {
+        let rounded: Set<SeriesTextRole> = [.micro, .value]
         for role in SeriesTextRole.allCases {
-            XCTAssertEqual(role.design == .rounded, role == .micro, "\(role)")
+            XCTAssertEqual(role.design == .rounded, rounded.contains(role), "\(role)")
         }
     }
 
     /// `note` exists precisely to be `micro`'s size without its shout.
     func testNoteMatchesMicroInSizeButNotInVoice() {
-        XCTAssertEqual(SeriesTextRole.note.size, SeriesTextRole.micro.size)
+        XCTAssertEqual(SeriesTypeScale.reading.size(.note), SeriesTypeScale.reading.size(.micro))
         XCTAssertEqual(SeriesTextRole.note.weight, .regular)
         XCTAssertEqual(SeriesTextRole.micro.weight, .bold)
     }

@@ -7,10 +7,10 @@ import SwiftUI
 /// its explanatory paragraphs through `micro` — whose bold rounded design was
 /// chosen for one-or-two-word small caps labels, and which sets a paragraph as
 /// a slab of fat round grey. Minute was missing `header`. Both are here.
-public enum SeriesTextRole: Sendable, CaseIterable {
-    /// Small-caps labels, keyboard hints. The only role that is rounded.
+public enum SeriesTextRole: Sendable, CaseIterable, Hashable {
+    /// Small-caps labels, keyboard hints.
     case micro
-    /// Explanatory prose under a label or card — same size as `micro`, but
+    /// Explanatory prose under a label or card — the same size as `micro`, but
     /// regular and not rounded, because a sentence is not a label.
     case note
     /// Secondary information, stage rows, pills, buttons.
@@ -19,33 +19,87 @@ public enum SeriesTextRole: Sendable, CaseIterable {
     case header
     /// Row content, field values, names.
     case body
+    /// The emphasised number — a spend, a percentage, a duration. Bold and
+    /// rounded, so a figure reads as a figure among the labels around it.
+    case value
     /// Long-form prose. Carries `lineSpacing(6)` at the call site — a Notion-ish
     /// 1.5 line height, which is what mixed Chinese and English needs.
     case reading
     /// The one thing a surface is about.
     case display
 
-    public var size: CGFloat {
-        switch self {
-        case .micro, .note: return 12
-        case .meta: return 14
-        case .header, .body, .reading: return 16
-        case .display: return 18
-        }
-    }
-
+    /// Weight and design ARE shared: they carry the role's meaning, and a
+    /// `micro` label that is bold and rounded in one app and regular in
+    /// another is two roles wearing one name.
     public var weight: Font.Weight {
         switch self {
-        case .micro: return .bold
+        case .micro, .value, .display: return .bold
         case .note, .reading: return .regular
         case .meta, .body: return .medium
         case .header: return .semibold
-        case .display: return .bold
         }
     }
 
     public var design: Font.Design {
-        self == .micro ? .rounded : .default
+        switch self {
+        case .micro, .value: return .rounded
+        default: return .default
+        }
+    }
+}
+
+/// The point sizes behind the roles.
+///
+/// **Sizes are the app's own, the way preference VALUES are.** The surfaces are
+/// physically different: Brim's panel drops out of a hardware notch and is
+/// glanced at, Gloss's card sits beside the sentence you are reading, Minute's
+/// window is where an hour goes. Imposing one point size on all three would
+/// have made the notch panel half again as large for no reason anyone could
+/// name.
+///
+/// What is shared is the vocabulary — the same seven roles, in the same order,
+/// with the same weight and design — so `header` means "section header"
+/// everywhere and no app grows a private eighth role for something the other
+/// two already have a word for.
+public struct SeriesTypeScale: Sendable {
+    private var sizes: [SeriesTextRole: CGFloat]
+
+    public init(
+        micro: CGFloat, note: CGFloat, meta: CGFloat, header: CGFloat,
+        body: CGFloat, value: CGFloat, reading: CGFloat, display: CGFloat
+    ) {
+        sizes = [
+            .micro: micro, .note: note, .meta: meta, .header: header,
+            .body: body, .value: value, .reading: reading, .display: display,
+        ]
+    }
+
+    public func size(_ role: SeriesTextRole) -> CGFloat {
+        sizes[role] ?? 14
+    }
+
+    /// For text meant to be read: Gloss's answer card, Minute's transcript.
+    public static let reading = SeriesTypeScale(
+        micro: 12, note: 12, meta: 14, header: 16,
+        body: 16, value: 16, reading: 16, display: 18
+    )
+
+    /// For a dense gauge glanced at from across the desk: Brim's panel, where
+    /// a column of figures has to fit under a notch.
+    public static let compact = SeriesTypeScale(
+        micro: 8, note: 9, meta: 9, header: 10,
+        body: 11, value: 13, reading: 12, display: 15
+    )
+}
+
+private struct SeriesTypeScaleKey: EnvironmentKey {
+    static let defaultValue = SeriesTypeScale.reading
+}
+
+extension EnvironmentValues {
+    public var seriesTypeScale: SeriesTypeScale {
+        get { self[SeriesTypeScaleKey.self] }
+        set { self[SeriesTypeScaleKey.self] = newValue }
     }
 }
 
@@ -53,6 +107,7 @@ private struct SeriesScaledFont: ViewModifier {
     @Environment(\.seriesTheme) private var theme
     @Environment(\.seriesTextScale) private var scale
     @Environment(\.seriesTypeface) private var typeface
+    @Environment(\.seriesTypeScale) private var typeScale
 
     let role: SeriesTextRole
     var weightOverride: Font.Weight?
@@ -65,7 +120,7 @@ private struct SeriesScaledFont: ViewModifier {
         // missed edit. `default` keeps each role's own design.
         let design = typeface.design ?? designOverride ?? role.design
         var font = Font.system(
-            size: scale.apply(to: role.size),
+            size: scale.apply(to: typeScale.size(role)),
             weight: theme.weight(weightOverride ?? role.weight),
             design: design
         )
