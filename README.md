@@ -60,6 +60,9 @@ switching to Light did nothing until the window was closed and reopened.
 | `SeriesOverlayRoot` / `SeriesMenuRequest` / `SeriesDialogRequest` | menus and dialogs, drawn in the window |
 | `SeriesListRow` / `SeriesTextEditor` / `SeriesEmptyState` | lists and long-form editing |
 | `StatusDot` / `ShimmerText` / `MarqueeText` / `InlineNote` / `Hairline` | indicators |
+| `SeriesAnswer` / `AnswerText` / `AnswerRenderer` / `DeltaBuffer` | a streamed answer: markdown split into blocks, drawn as one selectable text view, deltas batched per frame |
+| `SeriesChip` / `ChipFlow` / `StopButton` / `RetryControl` | the controls around an answer |
+| `NewlineKey` / `EditingShortcuts` | ⇧↩ in a send-on-Return field; ⌘A/C/V/X/Z for a panel with no Edit menu |
 
 Wrap a window's content in `SeriesOverlayRoot` to give it menus and dialogs.
 `SeriesDropdown` needs one — it draws its popup there rather than opening a
